@@ -33,8 +33,8 @@ const ChRefund = (() => {
     marks: [
       { from: 0.04, to: 0.165, shot: "list", box: "search", label: "주문번호 검색", below: true, c: "var(--ion)" },
       { from: 0.18, to: 0.235, shot: "found", box: "hero", label: "A-1031 한 줄", below: true, c: "var(--amber)" },
-      { from: 0.32, to: 0.44, shot: "detail", box: "request", label: "요청 사유", c: "var(--amber)", lens: 1.7, lensFocus: [0.2, 0.7] },
-      { from: 0.47, to: 0.56, shot: "refund", box: "amountField", label: "금액", c: "var(--blue)", lens: 2, lensFocus: [0.12, 0.5], lensSize: 200 },
+      { from: 0.32, to: 0.44, shot: "detail", box: "request", label: "요청 사유", c: "var(--amber)", lens: 1.7, lensBox: "reason" },
+      { from: 0.47, to: 0.56, shot: "refund", box: "amountField", label: "금액", c: "var(--blue)", lens: 2, lensBox: "amountText", lensSize: 200 },
       { from: 0.56, to: 0.66, shot: "refund", box: "confirm", label: "34,000원 환불", below: true, spot: true },
       { from: 0.68, to: 0.725, shot: "done", box: "badge", label: "배지", below: true, c: "var(--mint)" },
       { from: 0.7, to: 0.84, shot: "done", box: "done", label: "처리 기록", right: true, c: "var(--mint)" },

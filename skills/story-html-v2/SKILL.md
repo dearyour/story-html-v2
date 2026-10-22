@@ -29,7 +29,8 @@ description: "제품의 실제 화면 캡처를 주인공으로, 카메라가 �
 2. **출발점 복사.** 기본 위치 `~/Documents/new-html/projects/YYYY-MM-DD-<name>/`(사용자가 지정하면 그곳).
    `cp -R <skill>/assets/starter <dest>`. 스킬 안의 starter는 고치지 않는다.
 3. **촬영.** 제품을 띄우고 `shots.config.mjs`에 장면별 상태(url · before 단계)와 **가리킬 요소의 박스**를
-   적는다. 타이핑·응답은 `type`/`record`로 녹화한다. 공개 페이지면 실명·회사·호스트를 `redact.local.mjs`
+   적는다(문장 속 한 구절은 `{ selector, text }` 박스로). 타이핑·응답은 `type`/`record`로 녹화한다. 촬영은
+   기본이 읽기 전용(GET 외 요청 차단)이라 누군가의 실제 도구를 찍어도 데이터가 바뀌지 않는다. 공개 페이지면 실명·회사·호스트를 `redact.local.mjs`
    (git 제외)에 적어 촬영 때 DOM에서 바꾸고 `forbid`로 막는다. `node capture.mjs` 후 **모든 캡처를 열어
    본다**(이미지·이니셜·슬러그는 글자 치환이 못 잡는다). 실행할 수 없는 제품은 재구성 페이지를 만들어
    같은 방식으로 찍는다(capture.md §5).

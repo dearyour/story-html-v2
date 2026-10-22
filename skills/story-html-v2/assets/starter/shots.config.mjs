@@ -18,7 +18,8 @@ export default {
   forbid: [],
   hide: [],
   blur: [],
-  // Named boxes measured on every shot where they exist (css px). "row-*" names each match by data-id.
+  // Named boxes measured on every shot where they are visible (css px). "row-*" names each match by
+  // data-id; { selector, text } measures a phrase inside an element (loupe focus, cursor on a word).
   boxes: {
     search: "#q",
     tabs: "#tabs",
@@ -33,12 +34,12 @@ export default {
     {
       key: "detail",
       url: "#tab=all&sel=A-1031",
-      boxes: { drawer: ".drawer", badge: "#drBadge", amount: ".d-amount", timeline: ".timeline", request: ".timeline li.warn", refund: "#refundBtn" },
+      boxes: { drawer: ".drawer", badge: "#drBadge", amount: ".d-amount", timeline: ".timeline", request: ".timeline li.warn", reason: { selector: ".timeline li.warn", text: "분쇄도를 잘못 골랐어요" }, refund: "#refundBtn" },
     },
     {
       key: "refund",
       url: "#tab=all&sel=A-1031&modal=refund",
-      boxes: { modal: ".modal", amountField: "#refundAmt", confirm: "#confirmBtn" },
+      boxes: { modal: ".modal", amountField: "#refundAmt", amountText: { selector: "#refundAmt", text: "34,000원" }, confirm: "#confirmBtn" },
     },
     {
       key: "done",

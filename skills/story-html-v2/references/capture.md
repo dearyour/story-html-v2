@@ -13,6 +13,10 @@ reproducible, anonymised and precisely addressable.
   and enough surrounding rows that the screen looks in use.
 - Logged-in apps: save a session once (Playwright `storageState`) and pass it through
   `context: { storageState: "auth.json" }`. Keep that file out of every repository.
+- **Read-only by default.** Every request other than GET/HEAD/OPTIONS is aborted and listed at the end
+  of the run, so typing, clicking and recording cannot save, recompute or delete anything — capture a
+  live tool without touching its data. An app that reads through POST (GraphQL) needs
+  `readOnly: false`; then keep every `before` / `type` / `record` step away from writes.
 - `playwright-core` + the installed Google Chrome, same as check.mjs:
   `mkdir -p ~/.cache/story-html-pw && cd ~/.cache/story-html-pw && npm init -y >/dev/null && npm i playwright-core`.
 
@@ -26,6 +30,8 @@ export default {
   scale: 2, quality: 0.82,              // saved WebP pixel ratio and quality
   context: {},                          // passed to Playwright (storageState, colorScheme, …)
   settle: 0,                            // ms to wait after redaction before each screenshot
+  wait: ".app-ready",                   // default wait for every shot (selector or ms); a shot's own wait wins
+  readOnly: true,                       // abort non-GET requests (default)
   boxes: { search: "#q", "row-*": "tr[data-id]" },     // measured on every shot where present
   shots: [
     { key: "list", url: "orders" },
@@ -33,6 +39,7 @@ export default {
     { key: "confirm", url: "orders/A-1031", before: async (page) => { await page.click("#refundBtn"); } },
     { key: "search", url: "orders", type: { selector: "#q", text: "A-1031", every: 1 } },
     { key: "reply", url: "chat/7", record: { count: 12, step: async (page, i) => { await page.click("#next"); } } },
+    { key: "report", url: "report", fullPage: true },          // the whole scrollable page (camera can travel down)
     { key: "phone", image: "raw/phone-home.png", scale: 3 },  // a screenshot taken elsewhere
   ],
 };
@@ -43,7 +50,12 @@ export default {
   scroll, seed data via `page.evaluate`). Every shot starts from a fresh document.
 - **Boxes**: name every element the story points at — camera targets, marks, cursor targets, loupe
   regions. A name ending in `*` measures every match and names it by `data-id` (or index):
-  `row-*` → `row-A-1031`. Chapters use `box("detail", "refund")`; nothing is placed by eye.
+  `row-*` → `row-A-1031`. `{ selector, text }` measures a phrase inside an element (the words a loupe
+  should read, a number the cursor points at). Only visible, rendered elements on the captured area are
+  kept (closed `<details>`, hidden tabs and scrolled-away rows are skipped). Chapters use
+  `box("detail", "refund")`, `box("list", ["row-A-1031", "row-A-1029"])` for a union; nothing is placed
+  by eye.
+- `fullPage: true` captures the whole scrollable page; boxes are measured in page coordinates.
 - `node capture.mjs --only=detail,confirm` re-shoots some keys and merges them into the manifest.
 
 ## 3. Redaction for public pages
@@ -79,7 +91,8 @@ before the screenshot, so replaced text is drawn by the app's own fonts at the a
 - `record: { count, step(page, i), stepFirst }` records any progression (a streaming answer — poll the
   DOM between frames; a drag; a long scroll inside a pane).
 - Play with `sequence: seq("search", 0.05, 0.16)` in the chapter's camera. Frames cover the key shots
-  only between the first and last frame's `at`; keep a camera key on a matching shot around it.
+  from the first frame on, and the last frame holds until the camera moves to a key placed after the
+  recording.
 - Real agent or network output: run it once for real, record, and stamp the chapter with that date
   (`2026-10-22 · 실제 요청·응답`). Do not fake a reply by typing text over a frame.
 

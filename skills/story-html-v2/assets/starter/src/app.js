@@ -16,8 +16,17 @@ const appSize = (m) => {
   return [d.w, d.h + d.gap + d.mech];
 };
 
-/** A named element measured at capture time (shots.config boxes) → { x, y, w, h } in the shot's css px. */
+/** A named element measured at capture time (shots.config boxes) → { x, y, w, h } in the shot's css px.
+    An array of names gives their union (a ring around a run of rows). */
 function box(shot, name, pad = 0) {
+  if (Array.isArray(name)) {
+    const bs = name.map((n) => box(shot, n));
+    const x = Math.min(...bs.map((b) => b.x));
+    const y = Math.min(...bs.map((b) => b.y));
+    const r = Math.max(...bs.map((b) => b.x + b.w));
+    const btm = Math.max(...bs.map((b) => b.y + b.h));
+    return { x: x - pad, y: y - pad, w: r - x + pad * 2, h: btm - y + pad * 2 };
+  }
   const b = SHOTS[shot]?.boxes?.[name];
   if (!b) {
     console.error(`[shots] no box "${name}" in shot "${shot}" — add it to shots.config.mjs boxes and re-capture`);
@@ -49,10 +58,12 @@ function seq(name, a, b) {
  *           cap: "pill text" shown bottom-left while the key holds. path: address-bar path (default: the shot's).
  *   marks:  [{ from, to, shot, x, y, w, h | box: "name", pad?, label, c, below, right, spot, lens }]
  *           ring + label on a region; spot dims the rest; lens = magnify ×n in a loupe beside it
- *           (lensFocus: [fx, fy] 0..1 inside the mark, default centre · lensSize: px, default 230).
- *   cursor: [{ at, x, y | box: "name", dx?, dy?, label, click, hide }]  — box keys resolve on the shot
- *           the camera holds at that moment.
- *   sequence: [{ at, shot }] — recorded frames (use seq()); shown from the first frame's at to the last's.
+ *           (lensBox: "name" focuses a measured box — e.g. a { selector, text } run — else lensFocus:
+ *           [fx, fy] 0..1 inside the mark, default centre · lensSize: px, default 230).
+ *   cursor: [{ at, x, y | box: "name", dx?, dy?, label, click, hide, hold }]  — box keys resolve on the
+ *           shot the camera holds at that moment; hold = p the cursor (and its label) stays before leaving.
+ *   sequence: [{ at, shot }] — recorded frames (use seq()); shown from the first frame's at, and the last
+ *           frame holds until the camera leaves for a key placed after the recording.
  *   minW: narrowest desktop framing (default 1060) · host: address-bar host
  *   size / msize: { w, h } window design on desktop / phones (default: the window above a mechanism panel)
  * }
@@ -123,6 +134,25 @@ function AppCam(host, def) {
     }
     k.path = k.path ?? SHOTS[k.shot]?.path ?? "";
   }
+  // Two consecutive keys that ask for different places but land on the same frame (the shot is too small
+  // for this width, so both clamp to its edge) make a camera that "barely moves" — warn so check.mjs logs it.
+  const frameOf = (k) => {
+    const sh = dims(k.shot);
+    const w = Math.max(k.w, Math.min(def.minW ?? MINW, sh.w));
+    const vh = ((D.h - BAR) * w) / D.w;
+    const x = w >= sh.w ? 0 : clamp(k.cx - w / 2, 0, sh.w - w);
+    const y = vh >= sh.h ? 0 : clamp(k.cy - vh / 2, 0, sh.h - vh);
+    return { x, y, w };
+  };
+  keys.forEach((k, i) => {
+    const prev = keys[i - 1];
+    if (!prev || prev.shot !== k.shot) return;
+    const asked = Math.hypot(k.cx - prev.cx, k.cy - prev.cy);
+    const [fa, fb] = [frameOf(prev), frameOf(k)];
+    const moved = Math.hypot(fa.x - fb.x, fa.y - fb.y) + Math.abs(fa.w - fb.w);
+    if (asked > 120 && moved < 24)
+      console.warn(`[AppCam] keys at ${prev.at} and ${k.at} on "${k.shot}" land on the same frame — the shot is too small to move there at this width (capture fullPage, lower w, or use a mark/loupe instead)`);
+  });
   const shotAt = (at) => {
     let s = keys[0].shot;
     for (const k of keys) if (k.at <= at) s = k.shot;
@@ -134,7 +164,8 @@ function AppCam(host, def) {
       m.label ? `<span class="ac-mark-l${m.below ? " is-below" : ""}${m.right ? " is-right" : ""}">${m.label}</span>` : ""
     }</div>`);
     marksBox.appendChild(n);
-    return { ...m, x: r.x, y: r.y, w: r.w, h: r.h, n };
+    const lb = m.lensBox ? box(m.shot, m.lensBox) : null;
+    return { ...m, x: r.x, y: r.y, w: r.w, h: r.h, n, focus: lb ? [lb.x + lb.w / 2, lb.y + lb.h / 2] : null };
   });
   const cursorKeys = (def.cursor || [])
     .map((c) => (c.box ? { ...c, ...spot(c.shot || shotAt(c.at), c.box, c.dx, c.dy) } : c))
@@ -202,15 +233,18 @@ function AppCam(host, def) {
       const v = o.toFixed(3);
       if (imgs[k].style.opacity !== v) imgs[k].style.opacity = v;
     }
-    // Recorded frames cover the key shots only inside the recording's own window.
+    // Recorded frames cover the key shots from the first frame on; the last frame holds until the camera
+    // leaves for a key placed after the recording (fading with that move), so no older shot flashes in.
     if (frameImage) {
-      const live = p >= frames[0].at && p <= frames[frames.length - 1].at;
+      const lastAt = frames[frames.length - 1].at;
+      const held = (key) => key.at <= lastAt;
+      const cover = p < frames[0].at ? 0 : held(c.a) ? (c.b === c.a || held(c.b) ? 1 : 1 - c.k) : 0;
+      const live = cover > 0;
       let f = frames[0];
       for (const cand of frames) {
         if (cand.at > p) break;
         f = cand;
       }
-      if (Engine.reduce) f = frames[frames.length - 1];
       if (live && f.shot !== frameKey && has(f.shot)) {
         frameKey = f.shot;
         const r = SHOTS[frameKey];
@@ -218,7 +252,7 @@ function AppCam(host, def) {
         frameImage.style.width = `${r.w}px`;
         frameImage.style.height = `${r.h}px`;
       }
-      frameImage.style.opacity = live ? "1" : "0";
+      frameImage.style.opacity = cover.toFixed(3);
     }
     const key = c.k < 0.5 ? c.a : c.b;
     setText(cap, key.cap || "");
@@ -252,8 +286,7 @@ function AppCam(host, def) {
     const L = m.lensSize || 230;
     const z = cam.s * m.lens;
     const [fx, fy] = m.lensFocus || [0.5, 0.5];
-    const px = m.x + m.w * fx;
-    const py = m.y + m.h * fy;
+    const [px, py] = m.focus || [m.x + m.w * fx, m.y + m.h * fy];
     const c = project(px, py);
     const right = project(m.x + m.w, 0).x;
     const left = project(m.x, 0).x;
@@ -278,8 +311,9 @@ function AppCam(host, def) {
     for (let j = 0; j < list.length; j++) if (p >= list[j].at) i = j;
     const A = list[i];
     const B = list[Math.min(list.length - 1, i + 1)];
-    const gap = Math.max(0.001, B.at - A.at);
-    const kk = B === A ? 0 : E.travel(seg((p - A.at) / gap, 0, 0.55));
+    const hold = Math.min(A.hold || 0, (B.at - A.at) * 0.8);
+    const gap = Math.max(0.001, B.at - A.at - hold);
+    const kk = B === A ? 0 : E.travel(seg((p - A.at - hold) / gap, 0, 0.55));
     if (A.hide) vis = 0;
     cur.style.opacity = vis.toFixed(3);
     cur.style.transform = `translate3d(${((lerp(A.x, B.x, kk) - x) * s).toFixed(1)}px, ${((lerp(A.y, B.y, kk) - y) * s).toFixed(1)}px, 0)`;
@@ -335,11 +369,26 @@ function AppChapter(id, steps, cam, mechTitle, mechSub = "", opts = {}) {
   simStamp(C.product, opts.stamp || cam.stamp || `${CAPTURE.captured} 화면`);
   C.product.dataset.capsuleFrom = "";
   let wasMobile = null;
+  // Canvas (fit.inner) coordinates of the window and the panel body, measured in resize().
+  const geo = { cam: { x: 0, y: 0 }, mech: null };
   return {
     C,
     fit,
     app,
     mech,
+    /** Capture px → canvas px under the current camera (overlays that cross window and panel). */
+    toCanvas(x, y) {
+      const v = app.project(x, y);
+      return { x: geo.cam.x + v.x, y: geo.cam.y + v.y };
+    },
+    /** Graph viewBox px → canvas px (the SVG is centred and scaled to fit the panel body). */
+    fromGraph(x, y) {
+      const m = geo.mech;
+      if (!m) return { x, y };
+      const [vw, vh] = Engine.mobile ? [380, 216] : [1000, 188];
+      const s = Math.min(m.w / vw, m.h / vh);
+      return { x: m.x + (m.w - vw * s) / 2 + x * s, y: m.y + (m.h - vh * s) / 2 + y * s };
+    },
     resize() {
       if (wasMobile !== Engine.mobile) {
         wasMobile = Engine.mobile;
@@ -348,6 +397,15 @@ function AppChapter(id, steps, cam, mechTitle, mechSub = "", opts = {}) {
       if (!withMech) camHost.style.height = `${(Engine.mobile ? cam.msize : cam.size).h}px`;
       app.resize(Engine.mobile);
       fit.resize();
+      // Rect differences / scale: independent of which ancestor happens to be positioned.
+      const fr = fit.inner.getBoundingClientRect();
+      const s = fit.scale || 1;
+      const at = (n) => {
+        const r = n.getBoundingClientRect();
+        return { x: (r.left - fr.left) / s, y: (r.top - fr.top) / s };
+      };
+      geo.cam = at(camHost);
+      if (mech) geo.mech = { ...at(mech.body), w: mech.body.clientWidth, h: mech.body.clientHeight };
     },
   };
 }

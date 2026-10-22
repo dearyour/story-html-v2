@@ -1,6 +1,6 @@
 {
   "name": "story-html-v2",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Scroll stories built on the product's real screens: a camera flies over captures with rings, loupes and a demo cursor, recorded frames play typing, and a mechanism panel draws how each screen works as a motion graphic (single HTML).",
   "author": {
     "name": "dearyour",

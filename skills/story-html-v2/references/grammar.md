@@ -128,8 +128,12 @@ Report "**바닥 대비 새로 만든 것**" (scene, effect, where) at the end.
   moves to another region (e.g. drawer → toast).
 - Keep the framed region containing every mark of that moment — a mark half outside the view reads as
   a bug. If an element sits at the edge, frame it with `dx/dy`, or mark a smaller inner box.
-- Cursor: arrive (`label`), dwell, `click: true` 0.015–0.03 before the key that shows the result.
-  `hide: true` parks it invisibly. Box cursor keys resolve on the shot the camera holds at that `at`.
+- Cursor: arrive (`label`), dwell (`hold: 0.06` keeps it and its label in place before leaving), `click:
+  true` 0.015–0.03 before the key that shows the result. `hide: true` parks it invisibly. Box cursor keys
+  resolve on the shot the camera holds at that `at`.
+- A single dense screen leaves the camera nowhere to go: at 1060 wide a 1440×900 capture only shows
+  ~610 px of height, so keys clamp to the same frame (AppCam warns: "land on the same frame"). Capture it
+  `fullPage` so the camera can travel down it, or stay put and let marks + loupes move instead.
 - Phones: each key gets `mw` (≤ 760) and `mx/my` (crop centre) — defaults come from the box. Loupes
   are hidden on phones (the crop is already close).
 
@@ -169,7 +173,8 @@ Kit (kit.js): `Chapter(id, { layout, ctx, link, kicker, steps })` → `{ product
 Shots (embedded by build.mjs from `shots/manifest.json`):
 - `SHOTS[key] = { src, w, h, path, boxes }` (css px of the capture) · `SEQS[name] = [frame keys]` ·
   `CAPTURE = { captured, host }`.
-- `box(shot, name, pad)` → `{x,y,w,h}` · `spot(shot, name, dx, dy)` → `{x,y}` centre ·
+- `box(shot, name | [names], pad)` → `{x,y,w,h}` (an array gives the union — a ring around a run of
+  rows) · `spot(shot, name, dx, dy)` → `{x,y}` centre ·
   `seq(name, a, b)` → `[{ at, shot }]` frames spread over p ∈ [a, b]. Unknown names log
   `console.error`, which `check.mjs` reports — fix them, never ignore.
 
@@ -178,8 +183,14 @@ App (app.js):
   `{ C, fit, app, mech, resize() }`.
 - `AppCam(host, def)` → `{ node, update(p), resize(mobile), project(x, y), camera }`. `def`:
   `keys`, `marks` (`{ from, to, shot, box | x,y,w,h, pad, label, c, below, right, spot, lens,
-  lensFocus:[fx,fy], lensSize }`), `cursor`, `sequence`, `minW`, `host`, `size`/`msize`.
+  lensBox | lensFocus:[fx,fy], lensSize }`), `cursor` (`{ at, box | x,y, dx, dy, label, click, hide,
+  hold }`), `sequence`, `minW`, `host`, `size`/`msize`.
   `project(x, y)` maps capture px → window px under the current camera (overlays outside the world).
+- `A.toCanvas(x, y)` (capture px → canvas px, through the camera) and `A.fromGraph(x, y)` (Graph viewBox
+  px → canvas px) put an overlay in `A.fit.inner` that travels between the window and the panel — e.g.
+  a measured region of the capture peeling off and landing on a Graph node.
+- Sequences: the recording covers the key shots from its first frame; its last frame holds until the
+  camera leaves for a key placed after it (fading with that move) — no older shot flashes in between.
 - `Mech(host, title, sub)` → `{ body, cap(text) }` · `mechRows(rows)` + `lightRows(body, s)` (fallback).
 - `Graph(host, { svg, mobile })` → `{ update(s, k), resize() }`; attributes: `data-on="2" | "2-4"`,
   `data-now="3 5"`, `data-draw="2:0.1-0.7"`, `data-along="id" data-at="3:0-0.6"` (+ `data-stay`,
@@ -208,8 +219,8 @@ Chapter module: `const ChName = (() => { …; return { build, resize, update }; 
 - Phones: one column, window 380×300 over a 250-tall panel; keys crop with `mw/mx/my`; marks keep
   their labels; the cursor still moves; loupes hidden; phone Graph SVG. End chapter `height: auto`.
 - Reduced motion: `A.app.update(Engine.reduce ? SETTLE[s] : p)` — the camera snaps, sequences show
-  their last frame, cursor hidden, Graph strokes drawn and counts final, opening shows its settled
-  state (no loose fragments).
+  the frame at that settled p (put a step's SETTLE after its recording's last frame to show the typed
+  result), cursor hidden, Graph strokes drawn and counts final, opening shows its settled state.
 
 ## 10. Pitfalls already hit
 
@@ -217,12 +228,15 @@ Chapter module: `const ChName = (() => { …; return { build, resize, update }; 
 - **Hash-only navigation keeps state** between shots (focus, typed text) → capture.mjs loads
   `about:blank` before every shot. Do the same in custom `before` steps that reuse the page.
 - **UTC dates** stamp yesterday after midnight → capture date is local.
-- **Wide marks + loupe** magnify the middle of nothing → `lensFocus` on the words that matter, or mark
-  a smaller box.
+- **Wide marks + loupe** magnify the middle of nothing → measure the phrase as a text-run box
+  (`{ selector, text }`) and point `lensBox` at it.
 - **Labels outside the view** (a row wider than the framing) → put the label on a smaller box inside.
 - **A parked packet covers a node's label** → let it ride and vanish, or park it on the edge, and
   write the value as text above the edge.
-- **Three-line titles** squeeze the step list → keep each title line short.
+- **Three-line titles** squeeze the step list; **Graph chip labels wider than the chip** (often on
+  phones) → check.mjs logs both (`[title]`, `[chip]`); shorten the line or widen the chip.
+- **A live tool mutated by capturing** (typing into a field that autosaves, a button that recomputes) →
+  capture.mjs is read-only by default; keep it so for anything that is someone's real data.
 - **Shot keys built with template literals** defeat build pruning (`keys` are found as quoted strings)
   → name them literally or build with `--all-shots`.
 - **Size**: a 2× WebP of a dense UI is 100–150 KB; 140 captures ≈ 15 MB. Prune unused shots, prefer
@@ -249,7 +263,8 @@ node check.mjs "file://$PWD/dist/index.html" check/joins 1440 900 "<id2>@enter:0
 Open the PNGs yourself. Look for: marks inside the view and on the right element at every step,
 cursor on its target when it clicks, captions/labels not covering what they name, loupes reading the
 words that matter, the Graph state matching the step, no hollow panel. `_log.txt` must be empty
-(console errors — unknown shots/boxes/paths — and horizontal overflow are logged). `lowFill` empty.
+(console errors — unknown shots/boxes/paths —, camera keys landing on the same frame, 3-line titles,
+overflowing chip labels and horizontal overflow are logged). `lowFill` empty.
 Public page: `capture.mjs` forbidden-pattern failures 0, grep of `src/` and `shots/manifest.json` 0,
 and every shot looked at.
 

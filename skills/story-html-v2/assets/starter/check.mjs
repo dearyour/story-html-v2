@@ -67,6 +67,28 @@ for (const [id, ps] of FRAMES) {
     await page.waitForTimeout(wait);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
     if (overflow) logs.push(`[overflow] horizontal overflow at ${id} p=${p}`);
+    // Layout lint: a title past two lines squeezes the step list; a Graph chip label wider than its chip.
+    const lint = await page.evaluate((sid) => {
+      const out = [];
+      const sc = document.getElementById(sid.split("@")[0]);
+      if (!sc) return out;
+      for (const h2 of sc.querySelectorAll(".h2")) {
+        const lh = parseFloat(getComputedStyle(h2).lineHeight);
+        const lines = lh ? Math.round(h2.offsetHeight / lh) : 0;
+        if (lines > 2) out.push(`[title] ${lines} lines: "${h2.textContent.trim().slice(0, 40)}"`);
+      }
+      for (const n of sc.querySelectorAll(".gx .g-n")) {
+        const rect = n.querySelector(".g-b");
+        if (!rect) continue;
+        const rb = rect.getBBox();
+        for (const t of n.querySelectorAll(".g-t")) {
+          const tb = t.getBBox();
+          if (tb.width && (tb.x < rb.x + 2 || tb.x + tb.width > rb.x + rb.width - 4)) out.push(`[chip] label overflows its chip: "${t.textContent.trim()}"`);
+        }
+      }
+      return out;
+    }, id);
+    for (const msg of lint) if (!logs.some((l) => l.endsWith(`${msg} (${id.split("@")[0]})`))) logs.push(`${msg} (${id.split("@")[0]})`);
     if (width >= 820) {
       const fill = await page.evaluate((sid) => {
         const el = document.getElementById(sid.split("@")[0]);

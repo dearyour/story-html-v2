@@ -8,6 +8,9 @@
 // cursor), screenshot the viewport and save it as WebP. Sequences record one frame per typed character
 // (shot.type) or per step (shot.record) — played back as a flipbook by AppCam, never redrawn.
 // shots/manifest.json holds css sizes, boxes, the display path and the sequences; build.mjs embeds it.
+// Read-only by default: every request other than GET/HEAD/OPTIONS is aborted (and listed), so typing,
+// clicking and recording cannot save, recompute or delete anything in a live tool. config.readOnly =
+// false lifts it (an app that reads through POST/GraphQL) — then keep shot steps away from writes.
 // Needs playwright-core and an installed Google Chrome (same lookup as check.mjs).
 import { createRequire } from "node:module";
 import fs from "node:fs";
@@ -59,6 +62,15 @@ const page = await context.newPage();
 const enc = await browser.newPage();
 const logs = [];
 page.on("pageerror", (e) => logs.push(`[pageerror] ${e.message}`));
+const blocked = [];
+if (config.readOnly !== false) {
+  await context.route("**/*", (route) => {
+    const req = route.request();
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method())) return route.continue();
+    blocked.push(`${req.method()} ${req.url().slice(0, 120)}`);
+    return route.abort();
+  });
+}
 
 /** Rewrite identifying text in the live DOM, then hide / blur what text replacement cannot reach. */
 async function redact() {
@@ -99,21 +111,57 @@ const visibleText = () =>
     return `${document.title}\n${document.body.innerText}\n${vals.join("\n")}`;
   });
 
-/** Named boxes in screenshot css px. A name ending in "*" measures every match: row-* → row-<data-id|index>. */
-async function measure(spec) {
-  return page.evaluate((spec) => {
-    const out = {};
-    for (const [name, sel] of Object.entries(spec)) {
-      const els = name.endsWith("*") ? [...document.querySelectorAll(sel)] : [document.querySelector(sel)].filter(Boolean);
-      els.forEach((el, i) => {
-        const r = el.getBoundingClientRect();
-        if (!r.width || !r.height) return;
-        const key = name.endsWith("*") ? name.slice(0, -1) + (el.dataset.id || i) : name;
-        out[key] = { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) };
-      });
-    }
-    return out;
-  }, spec);
+/**
+ * Named boxes in screenshot css px. Only rendered, visible elements on the captured area count (a child
+ * of a closed <details>, a hidden tab or an element scrolled away is skipped).
+ *   "name": "selector"                      the first visible match
+ *   "row-*": "selector"                     every visible match → row-<data-id | index>
+ *   "name": { selector, text }              the run of `text` inside the first match (a phrase in a
+ *                                           paragraph — loupe focus and cursor without eyeballing)
+ */
+async function measure(spec, full) {
+  return page.evaluate(
+    ([spec, full]) => {
+      const out = {};
+      const sx = full ? scrollX : 0;
+      const sy = full ? scrollY : 0;
+      const W = full ? document.documentElement.scrollWidth : innerWidth;
+      const H = full ? document.documentElement.scrollHeight : innerHeight;
+      const put = (key, r) => {
+        const x = r.left + sx;
+        const y = r.top + sy;
+        if (!r.width || !r.height || x + r.width <= 0 || y + r.height <= 0 || x >= W || y >= H) return false;
+        out[key] = { x: Math.round(x), y: Math.round(y), w: Math.round(r.width), h: Math.round(r.height) };
+        return true;
+      };
+      const visible = (el) => (el.checkVisibility ? el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) : el.offsetParent !== null);
+      for (const [name, sel] of Object.entries(spec)) {
+        if (sel && typeof sel === "object") {
+          // A text run: the Range around the first occurrence of `text` inside the selector.
+          for (const root of document.querySelectorAll(sel.selector || "body")) {
+            if (!visible(root)) continue;
+            const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            let hit = null;
+            for (let n; (n = w.nextNode()) && !hit; ) {
+              const i = n.nodeValue.indexOf(sel.text);
+              if (i >= 0) hit = [n, i];
+            }
+            if (!hit) continue;
+            const range = document.createRange();
+            range.setStart(hit[0], hit[1]);
+            range.setEnd(hit[0], hit[1] + sel.text.length);
+            if (put(name, range.getBoundingClientRect())) break;
+          }
+          continue;
+        }
+        const all = [...document.querySelectorAll(sel)].filter(visible);
+        if (name.endsWith("*")) all.forEach((el, i) => put(name.slice(0, -1) + (el.dataset.id || i), el.getBoundingClientRect()));
+        else for (const el of all) if (put(name, el.getBoundingClientRect())) break;
+      }
+      return out;
+    },
+    [spec, full],
+  );
 }
 
 /** PNG buffer → WebP file through Chrome's own encoder (no image library needed). */
@@ -162,12 +210,15 @@ async function frame(key, shot) {
     failures.push(`${key}: forbidden pattern ${hit} still on screen — extend config.replace / hide`);
     return false;
   }
-  const boxes = await measure({ ...(config.boxes || {}), ...(shot.boxes || {}) });
-  const png = await page.screenshot({ type: "png" });
+  // fullPage: the whole scrollable page in one capture, so the camera can travel down a long screen.
+  const full = Boolean(shot.fullPage);
+  const boxes = await measure({ ...(config.boxes || {}), ...(shot.boxes || {}) }, full);
+  const png = await page.screenshot({ type: "png", fullPage: full });
   const file = `${key}.webp`;
   await saveWebp(png, path.join(outDir, file));
   const vp = page.viewportSize();
-  manifest.shots[key] = { file, w: vp.width, h: vp.height, path: shot.path ?? displayPath(page.url()), boxes };
+  const size = full ? await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.scrollHeight]) : [vp.width, vp.height];
+  manifest.shots[key] = { file, w: size[0], h: size[1], path: shot.path ?? displayPath(page.url()), boxes };
   return true;
 }
 
@@ -197,8 +248,9 @@ for (const shot of config.shots) {
   await page.goto("about:blank");
   await page.goto(resolveUrl(shot.url), { waitUntil: "load", timeout: 60000 });
   await page.evaluate(() => document.fonts?.ready);
-  if (typeof shot.wait === "number") await page.waitForTimeout(shot.wait);
-  else if (shot.wait) await page.waitForSelector(shot.wait, { timeout: 30000 });
+  const wait = shot.wait ?? config.wait; // per shot, else the config default
+  if (typeof wait === "number") await page.waitForTimeout(wait);
+  else if (wait) await page.waitForSelector(wait, { timeout: 30000 });
   if (shot.before) await shot.before(page);
   if (shot.type) {
     // Typing: one frame per `every` characters, from the empty field to the full text.
@@ -235,6 +287,7 @@ await browser.close();
 const total = Object.values(manifest.shots).reduce((n, s) => n + (fs.existsSync(path.join(outDir, s.file)) ? fs.statSync(path.join(outDir, s.file)).size : 0), 0);
 console.log(`${Object.keys(manifest.shots).length} shots · ${(total / 1048576).toFixed(1)} MB · ${manifestPath}`);
 if (logs.length) console.log(logs.join("\n"));
+if (blocked.length) console.log(`read-only: blocked ${blocked.length} request(s)\n  ${[...new Set(blocked)].slice(0, 12).join("\n  ")}`);
 if (failures.length) {
   console.error(`\nNOT SAVED (forbidden text still visible):\n${failures.join("\n")}`);
   process.exit(1);
