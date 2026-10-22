@@ -1,0 +1,17 @@
+#ch-hero .stage { background: radial-gradient(70% 60% at 72% 46%, #121426 0%, #07070a 55%, #000 100%); }
+/* the window assembles (--win) and the capture surfaces under the landed lines (--shot) */
+#ch-hero .ac { opacity: var(--win, 0); transform: scale(calc(0.96 + 0.04 * var(--win, 0))); transform-origin: 50% 40%; }
+#ch-hero .ac-world { opacity: var(--shot, 0); }
+#ch-hero .hx-frags { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+#ch-hero .hx-f { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 14px; padding: 0 16px; border-radius: calc(10px * (1 - var(--land, 0)) + 2px);
+  background: color-mix(in srgb, #0f1018 calc(100% - 70% * var(--land, 0)), transparent); border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+  box-shadow: inset 3px 0 0 var(--c), 0 18px 40px rgba(0, 0, 0, calc(0.45 * (1 - var(--land, 0))));
+  font: 600 15px/1 var(--sans); color: var(--ink); white-space: nowrap; overflow: hidden; will-change: transform; }
+#ch-hero .hx-f b { font: 700 14px/1 var(--mono); letter-spacing: 0.02em; }
+#ch-hero .hx-f span { color: var(--c); font-weight: 700; font-size: 14px; }
+#ch-hero .hx-f em { margin-left: auto; font-style: normal; color: var(--ink2); font-variant-numeric: tabular-nums; }
+#ch-hero .hx-f.is-hero { border-color: var(--amber); box-shadow: inset 3px 0 0 var(--amber), 0 0 0 4px rgba(255, 194, 74, 0.18), 0 18px 40px rgba(0, 0, 0, 0.45); }
+@media (max-width: 820px) {
+  #ch-hero .hx-f { gap: 8px; padding: 0 10px; font-size: 13px; }
+  #ch-hero .hx-f b, #ch-hero .hx-f span { font-size: 13px; }
+}

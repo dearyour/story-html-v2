@@ -1,0 +1,4 @@
+dist/
+check/
+redact.local.mjs
+raw/

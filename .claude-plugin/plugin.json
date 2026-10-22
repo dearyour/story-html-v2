@@ -1,0 +1,13 @@
+{
+  "name": "story-html-v2",
+  "version": "0.1.0",
+  "description": "Scroll stories built on the product's real screens: a camera flies over captures with rings, loupes and a demo cursor, recorded frames play typing, and a mechanism panel draws how each screen works as a motion graphic (single HTML).",
+  "author": {
+    "name": "dearyour",
+    "url": "https://github.com/dearyour"
+  },
+  "homepage": "https://github.com/dearyour/story-html-v2",
+  "repository": "https://github.com/dearyour/story-html-v2",
+  "license": "MIT",
+  "keywords": ["skill", "html", "scroll", "storytelling", "screenshots", "capture", "portfolio", "motion", "design-system"]
+}

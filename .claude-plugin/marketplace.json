@@ -1,0 +1,24 @@
+{
+  "name": "story-html-v2",
+  "owner": {
+    "name": "dearyour",
+    "url": "https://github.com/dearyour"
+  },
+  "metadata": {
+    "description": "story-html v2 — real-capture scroll stories (separate from the story-html v1 marketplace)"
+  },
+  "plugins": [
+    {
+      "name": "story-html-v2",
+      "source": "./",
+      "description": "Real product screens under a flying camera with rings, loupes, a demo cursor, recorded frames and a motion-graphic mechanism panel — one scroll-story HTML.",
+      "version": "0.1.0",
+      "author": { "name": "dearyour" },
+      "homepage": "https://github.com/dearyour/story-html-v2",
+      "repository": "https://github.com/dearyour/story-html-v2",
+      "license": "MIT",
+      "category": "design",
+      "keywords": ["skill", "html", "scroll", "capture", "portfolio"]
+    }
+  ]
+}

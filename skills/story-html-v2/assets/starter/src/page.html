@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- EDIT: "<이름> — <한 줄>" (the part before " — " also feeds the readout fallback). -->
+<title>Pier — 환불 한 건을 목록에서 끝까지 처리합니다</title>
+<meta name="description" content="EDIT: 이 페이지가 따라가는 제품과 개발 과정을 한두 문장으로. (예시: 가상 데모 상점 Pier의 실제 화면 캡처로 환불 한 건을 따라갑니다.)">
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<a class="skip" href="#ch-end">마지막 장으로 건너뛰기</a>
+<div class="frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<div class="grain" id="grain" aria-hidden="true"></div>
+<div class="toasts" id="toasts" aria-hidden="true"></div>
+<div class="carrier" id="carrier" aria-hidden="true"><i></i><span id="carrierText"></span></div>
+<div class="wipe" id="wipe" aria-hidden="true"><canvas id="wipeCanvas"></canvas><p class="wipe-beam"><span id="wipeText">DECODING</span></p></div>
+
+<!-- EDIT the HUD: brand (2 words, the second after the signal-coloured slash), meta line,
+     source link (the page the quoted lines come from). -->
+<header class="hud">
+  <a class="brand" href="#ch-hero" data-jump="ch-hero"><b>PIER</b><span>/</span><b>STORY</b></a>
+  <p class="hud-meta">주문 · 환불 콘솔 · 가상 데모</p>
+  <p class="hud-scene" aria-live="off"><span id="hudNum">00</span><em>/</em><span id="hudTotal">00</span><b id="hudName">INTRO</b></p>
+  <a class="hud-link" href="#">원문</a>
+</header>
+<nav class="rail" aria-label="장 이동"><ol id="rail"></ol></nav>
+<div class="readout" aria-hidden="true"><span id="roLeft">SCROLL ↓</span><span id="roRight">P 0.000</span></div>
+
+<main>
+<!-- One section per chapter, wrapped in <!--ch-id--> … <!--/ch-id--> markers (build.mjs reads the
+     order and the module names from them: ch-foo-bar → src/chapters/ch-foo-bar.js → ChFooBar).
+     data-chapter = "NUM|RAIL NAME|short desc" (add ";NUM|NAME|desc@0.55" for a second rail mark
+     inside the same chapter). data-org / data-period feed the meta line, readout and capsule.
+     --len = scroll length in vh (380–660 for product chapters, ~240 for the end). -->
+<!--ch-hero-->
+<section class="scene" id="ch-hero" data-chapter="00|INTRO|열네 건의 주문" data-org="Pier" data-period="주문 · 환불 콘솔" style="--len:520"><div class="stage"></div></section>
+<!--/ch-hero-->
+<!--ch-refund-->
+<section class="scene" id="ch-refund" data-chapter="01|REFUND|환불 한 건" data-org="환불" data-period="검색 · 상세 · 확인 · 완료" style="--len:640"><div class="stage"></div></section>
+<!--/ch-refund-->
+<!--ch-end-->
+<section class="scene" id="ch-end" data-chapter="02|END|화면 모음" data-org="정리" data-period="캡처 6장 · 입력 녹화" style="--len:260"><div class="stage"></div></section>
+<!--/ch-end-->
+</main>
+<script>
+/*__JS__*/
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+/* ch-refund uses the shared app layer (app.css) as is; chapter-only tweaks go here, all under #ch-refund. */
+#ch-refund .stage { background: radial-gradient(80% 70% at 70% 40%, #0d0f1a 0%, #050506 60%, #000 100%); }
