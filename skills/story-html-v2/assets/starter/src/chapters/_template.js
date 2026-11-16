@@ -14,7 +14,7 @@ const ChExample = (() => {
 
   const STEPS = [
     // 4–7 steps. title: ≤ 2 lines, one <em>, a claim about the product. body: 1–2 sentences. cite: source line.
-    { at: 0, label: "첫 단계", title: "<em>무엇을</em><br>하는 화면입니다.", body: "…", cite: note("sample", 0) },
+    { at: 0, label: "첫 단계", title: "<em>무엇을</em><br>하는 화면이에요.", body: "…", cite: note("sample", 0) },
     { at: 0.3, label: "두 번째", title: "…", body: "…", cite: note("sample", 1) },
     { at: 0.62, label: "세 번째", title: "…", body: "…", cite: note("sample", 2) },
   ];

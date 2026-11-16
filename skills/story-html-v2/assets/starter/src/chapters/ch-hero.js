@@ -12,10 +12,10 @@ const ChHero = (() => {
   let frags = [];
   let offY = 0; // the window's top inside the canvas (measured in resize, never per frame)
   const STEPS = [
-    { at: 0, label: "흩어진 줄", title: "결제 · 배송 · 환불이<br><em>한 목록</em>에 있습니다.", body: "상태도 금액도 다른 주문 열두 건이 떠 있습니다.", cite: note("intro", 0) },
-    { at: 0.3, label: "제자리로", title: "줄마다<br><em>제자리</em>가 있습니다.", body: "각 줄이 실제 목록 화면의 자기 행으로 내려앉습니다.", cite: note("intro", 1) },
-    { at: 0.56, label: "실제 화면", title: "그 자리가<br><em>실제 화면</em>입니다.", body: "가상 상점 Pier의 주문 목록 캡처가 줄 아래에서 드러납니다." },
-    { at: 0.8, label: HERO.id, title: `주인공은<br><em>${HERO.id}</em>입니다.`, body: `${HERO.who} 고객의 환불 요청, ${HERO.amount}. 이 페이지는 이 주문 하나를 따라갑니다.` },
+    { at: 0, label: "흩어진 줄", title: "결제 · 배송 · 환불이<br><em>한 목록</em>에 있어요.", body: "상태도 금액도 다른 주문 열두 건이 떠 있어요.", cite: note("intro", 0) },
+    { at: 0.3, label: "제자리로", title: "줄마다<br><em>제자리</em>가 있어요.", body: "각 줄이 실제 목록 화면의 자기 행으로 내려앉아요.", cite: note("intro", 1) },
+    { at: 0.56, label: "실제 화면", title: "그 자리가<br><em>실제 화면</em>이에요.", body: "줄 밑에서 가상 상점 Pier의 주문 목록 캡처가 나타나요." },
+    { at: 0.8, label: HERO.id, title: `주인공은<br><em>${HERO.id}</em>번이에요.`, body: `${HERO.who} 고객이 ${HERO.amount} 환불을 요청했어요. 끝까지 이 주문 하나만 따라가요.` },
   ];
   const SETTLE = [0.2, 0.5, 0.74, 0.97];
   const CAM = {

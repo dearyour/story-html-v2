@@ -9,11 +9,11 @@
 const ChRefund = (() => {
   let A, g;
   const STEPS = [
-    { at: 0, label: "검색", title: "주문번호를 치면<br><em>한 줄</em>만 남습니다.", body: "목록 위 검색칸에 A-1031을 칩니다. 한 글자마다 행이 줄어듭니다.", cite: note("refund", 0) },
-    { at: 0.22, label: "상세", title: "요청 사유는<br><em>상세</em>에 있습니다.", body: "행을 누르면 오른쪽에 고객 · 상품 · 처리 기록이 열립니다." },
-    { at: 0.44, label: "환불 창", title: "금액이 적힌<br><em>버튼</em>을 누릅니다.", body: "범위 · 금액 · 사유 · 재고 되돌리기를 한 창에서 확인합니다.", cite: note("refund", 1) },
-    { at: 0.66, label: "완료", title: "세 곳이 같은<br><em>상태</em>를 가리킵니다.", body: "배지, 처리 기록, 고객 알림이 함께 환불 완료로 바뀝니다.", cite: note("refund", 2) },
-    { at: 0.84, label: "남은 요청", title: "남은 요청은<br><em>한 건</em>입니다.", body: "환불 요청 탭에는 A-1024만 남았습니다." },
+    { at: 0, label: "검색", title: "주문번호를 치면<br><em>한 줄</em>만 남아요.", body: "목록 위 검색칸에 A-1031을 쳐요. 한 글자 칠 때마다 행이 줄어요.", cite: note("refund", 0) },
+    { at: 0.22, label: "상세", title: "요청 사유는<br><em>상세</em>에 있어요.", body: "행을 누르면 오른쪽에 고객 · 상품 · 처리 기록이 열려요." },
+    { at: 0.44, label: "환불 창", title: "금액이 적힌<br><em>버튼</em>을 눌러요.", body: "범위 · 금액 · 사유 · 재고 되돌리기를 한 창에서 확인해요.", cite: note("refund", 1) },
+    { at: 0.66, label: "완료", title: "세 곳이 같은<br><em>상태</em>를 가리켜요.", body: "배지, 처리 기록, 고객 알림에 모두 '환불 완료'가 떠요.", cite: note("refund", 2) },
+    { at: 0.84, label: "남은 요청", title: "남은 요청은<br><em>한 건</em>이에요.", body: "환불 요청 탭에는 A-1024만 남았어요." },
   ];
   // Reduced motion: one settled p per step (the end state of that step).
   const SETTLE = [0.165, 0.42, 0.62, 0.82, 0.97];
