@@ -102,7 +102,9 @@ code { font: 500 0.88em/1 var(--mono); background: rgba(239, 234, 220, 0.08); bo
   transition: border-color 0.2s, color 0.2s;
 }
 .hud-link:hover { border-color: var(--edge); color: var(--ink); }
-.rail { position: fixed; z-index: 50; right: 14px; top: 50%; transform: translateY(-50%); }
+.rail { position: fixed; z-index: 50; right: 14px; top: 72px; bottom: 16px; display: flex; flex-direction: column; pointer-events: none; }
+.rail ol { margin: auto 0; max-height: 100%; overflow-y: auto; scrollbar-width: none; pointer-events: auto; }
+.rail ol::-webkit-scrollbar { display: none; }
 .rail ol { display: grid; gap: 2px; }
 .rail a {
   display: flex; align-items: center; justify-content: flex-end; gap: 10px; height: 30px; padding-left: 12px;
